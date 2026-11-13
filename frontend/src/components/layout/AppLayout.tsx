@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, EyeOff, FileText, Home, LogOut, Receipt, MessageCircle, ShieldCheck, Leaf, UserRound, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, EyeOff, FileText, Home, LogOut, Receipt, MessageCircle, ShieldCheck, Leaf, UserRound, BookOpen, Eye } from 'lucide-react';
 import { Switch } from '@headlessui/react';
 import { ThemeToggleButton } from '../../theme/ThemeToggleButton';
 import { usePreferences } from '../../context/PreferencesContext';
@@ -58,24 +58,25 @@ function Topbar({ onToggleSidebar, showSidebarToggle }: { onToggleSidebar?: () =
 
       <div className="ml-auto flex items-center gap-3">
         <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-sm">
-          <span className={viewMode === 'simple' ? 'font-semibold' : 'text-muted'}>{t('view.simple')}</span>
+          <span className={`hidden sm:inline ${viewMode === 'simple' ? 'font-semibold' : 'text-muted'}`}>{t('view.simple')}</span>
           <Switch checked={viewMode === 'detailed'}
             onChange={(on: boolean) => setViewMode(on ? 'detailed' : 'simple')}
             className="relative inline-flex h-5 w-9 items-center rounded-full bg-line transition data-[checked]:bg-primary"
             aria-label={t('view.detailed')}>
             <span className="inline-block h-4 w-4 translate-x-0.5 rounded-full bg-white transition data-[checked]:translate-x-[18px]" />
           </Switch>
-          <span className={viewMode === 'detailed' ? 'font-semibold' : 'text-muted'}>{t('view.detailed')}</span>
+          <span className={`hidden sm:inline ${viewMode === 'detailed' ? 'font-semibold' : 'text-muted'}`}>{t('view.detailed')}</span>
         </div>
         <span className="hidden xl:inline max-w-[220px] text-[11px] leading-4 text-muted" title={viewMode === 'simple' ? 'Muestra lo esencial y oculta detalles secundarios.' : 'Muestra información ampliada y contexto adicional en los módulos.'}>
           {viewMode === 'simple' ? 'Esencial y fácil de leer' : 'Información ampliada'}
         </span>
 
         <button type="button" onClick={() => setBlurPrivate(!blurPrivate)} aria-pressed={blurPrivate}
-          title={t('privacy.hint')}
-          className="grid h-9 w-9 place-items-center rounded-full border border-line bg-surface">
-          <EyeOff className="h-4 w-4" />
-          <span className="sr-only">{t('privacy.blur')}</span>
+          aria-label={blurPrivate ? 'Privacidad activada: mostrar datos' : 'Privacidad desactivada: ocultar datos'}
+          title={blurPrivate ? 'Privacidad activada. Tocá para mostrar los datos' : t('privacy.hint')}
+          className={`privacy-toggle inline-flex h-9 items-center gap-2 rounded-full border px-2.5 text-xs font-semibold transition ${blurPrivate ? 'border-primary bg-primary/15 text-primary' : 'border-line bg-surface text-muted'}`}>
+          {blurPrivate ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
+          <span className="hidden lg:inline">{blurPrivate ? 'Datos ocultos' : 'Datos visibles'}</span>
         </button>
 
         <NotificationsBell />
@@ -140,7 +141,7 @@ function MobileLayout({ children }: { children: ReactNode }) {
       <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line/80 bg-surface/95 backdrop-blur-md">
         {NAV.map(({ to, key, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end}
-            className={({ isActive }) => `flex flex-col items-center gap-1 py-2.5 text-xs ${isActive ? 'font-semibold text-primary' : 'text-muted'}`}>
+            className={({ isActive }) => `flex min-w-0 flex-col items-center gap-1 px-0.5 py-2.5 text-[10px] leading-tight ${isActive ? 'font-semibold text-primary' : 'text-muted'}`}>
             <Icon className="h-5 w-5" />
             {t(key)}
           </NavLink>
