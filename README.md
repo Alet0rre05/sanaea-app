@@ -10,8 +10,9 @@ Sistema B2B para digitalizar, auditar y liquidar planillas de prestaciones médi
 | 2 | `iam` (CustomUser, validador de 15 caracteres sin triple repetición, OTP por correo, Turnstile, JWT con refresh rotativo, roles) y `legal` (versiones, aceptaciones inmutables, consentimiento, baja) | Código entregado (backend) |
 | 3 | `operations` (pacientes, prestadores, obras sociales, tarifarios, visitas, planillas con pHash, evoluciones, liquidaciones, `SettlementStrategy`) | Código entregado; motor de cálculo con pruebas unitarias |
 | 4 | API DRF (ViewSets, errores estandarizados, telemetría sanitizada), chats `ScopedVisitChat` e `InternalContextThread`, soporte global | Código entregado |
-| 5 | Frontend: Vite, React, TypeScript, Tailwind, temas Clinical Frost / Obsidian Aurora, `ThemeController`, layouts adaptativos | Código entregado; no compilado |
-| 6 | Split-Screen OCR, widget de soporte, switch Vista Simple/Detallada, Blur Privacidad, autoguardado, offline (IndexedDB), deshacer con toast | Código entregado; no compilado |
+| 5 | Frontend: Vite, React, TypeScript, Tailwind, temas, `ThemeController`, layouts adaptativos, dashboard bento | Código entregado; sintaxis validada, no compilado |
+| 6 | Split-Screen OCR, widget de soporte, Vista Simple/Detallada con textos adaptativos, Blur Privacidad, autoguardado, offline (IndexedDB), deshacer con toast, notificaciones en la barra superior | Código entregado; sintaxis validada, no compilado |
+| 6+ | Pantallas de cuenta (cambio de email/respaldo/usuario con OTP, baja de agencia), vínculo familiar, consentimiento con firma en pantalla, evoluciones | Código entregado; sintaxis validada, no compilado |
 
 > **Importante:** el código inicial se escribió y se revisó sin poder ejecutar Django ni `npm` en el entorno de generación. Las migraciones iniciales están incluidas; el estado de las verificaciones ejecutadas para esta entrega figura en [Verificación](#verificación).
 
@@ -212,7 +213,10 @@ Antes del primer deploy, completar las variables de entorno indicadas en la secc
 
 ## Limitaciones conocidas
 
-- **Frontend incompleto frente al backend:** existen pantallas para login, planillas (incluido Split-Screen), liquidaciones, simulador, cobertura y soporte. **Faltan pantallas** para registro, verificación de cuenta, recuperación de contraseña, cambio de email/username, aceptación de documentos legales, vínculo familiar, evoluciones, chat operativo, firma de consentimiento y baja de agencia. Los endpoints correspondientes sí están implementados.
+- **Frontend pendiente frente al backend:** cubierto ahora: login, registro, verificación, recuperación, planillas (Split-Screen), liquidaciones, simulador, cobertura, soporte, documentos legales, cuenta (`/cuenta`), vínculo familiar (`/vinculos`), consentimiento (`/consentimiento`), evoluciones (`/evoluciones`) y baja de agencia (dentro de `/cuenta`, solo `TENANT_OWNER`). **Sin pantalla todavía:** chat operativo con banner de urgencias y ventana de 2 horas (revisar `ChatsPage`), hilos internos sobre planillas y liquidaciones, y bandeja de soporte de plataforma.
+- **Offline-first incompleto:** IndexedDB y sincronización al recuperar red existen solo en algunas pantallas. Falta aplicarlo a todos los formularios de carga de visitas y evoluciones.
+- **Notificaciones derivadas en el cliente:** la campana muestra solo documentos legales pendientes (`legal/pending/`). No hay endpoint de notificaciones en el backend; el estado de lectura se guarda por dispositivo.
+- **Sin verificación de compilación en el entorno de entrega:** los cambios de esta fase se validaron solo en sintaxis (TypeScript transpile). Antes de desplegar, ejecutar `npm run typecheck` y `npm run build`.
 - **OCR:** el motor no está definido en el documento maestro. Por defecto (`NullOCRExtractor`) no extrae datos y la carga se completa manualmente.
 - **Búsqueda sobre campos cifrados:** no es posible con SQL. Ver `docs/DECISIONES.md`.
 - **Liquidación con recargo nocturno:** el cálculo recorre minuto a minuto. Es correcto pero lento para visitas muy largas.
