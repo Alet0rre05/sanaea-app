@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, EyeOff, FileText, Home, LogOut, Receipt } from 'lucide-react';
+import { ChevronLeft, ChevronRight, EyeOff, FileText, Home, LogOut, Receipt, MessageCircle, ShieldCheck, Leaf } from 'lucide-react';
 import { Switch } from '@headlessui/react';
 import { ThemeToggleButton } from '../../theme/ThemeToggleButton';
 import { usePreferences } from '../../context/PreferencesContext';
@@ -13,6 +13,8 @@ const NAV = [
   { to: '/', key: 'nav.dashboard', icon: Home, end: true },
   { to: '/scans', key: 'nav.scans', icon: FileText, end: false },
   { to: '/settlements', key: 'nav.settlements', icon: Receipt, end: false },
+  { to: '/chat', key: 'nav.chat', icon: MessageCircle, end: false },
+  { to: '/legal', key: 'nav.legal', icon: ShieldCheck, end: false },
 ];
 
 function useIsMobile(): boolean {
@@ -35,14 +37,14 @@ function Topbar({ onToggleSidebar, showSidebarToggle }: { onToggleSidebar?: () =
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-line/80 bg-canvas/80 px-4 py-3 backdrop-blur-md">
+    <header className="topbar sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-line/80 bg-canvas/80 px-4 py-3 backdrop-blur-xl">
       {showSidebarToggle && (
         <button type="button" onClick={onToggleSidebar} aria-label="Colapsar menú"
           className="grid h-9 w-9 place-items-center rounded-lg border border-line bg-surface">
           <ChevronLeft className="h-4 w-4" />
         </button>
       )}
-      <span className="font-display text-lg font-extrabold tracking-tight">{t('app.name')}</span>
+      <div className="brand-lockup"><span className="brand-mark"><Leaf size={18} /></span><span className="font-display text-lg font-extrabold tracking-tight">{t('app.name')}</span><span className="brand-caption">CUIDADO CONECTADO</span></div>
 
       {user && user.memberships.length > 1 && (
         <select aria-label="Agencia activa" className="input max-w-[14rem] py-1.5"
@@ -104,7 +106,7 @@ function DesktopLayout({ children }: { children: ReactNode }) {
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar showSidebarToggle={false} />
-        <main className="mx-auto w-full max-w-7xl flex-1 p-5">{children}</main>
+        <main className="main-content mx-auto w-full max-w-[1440px] flex-1 p-5 sm:p-7 xl:p-9">{children}</main>
         <Footer />
       </div>
     </div>
@@ -117,7 +119,7 @@ function MobileLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col pb-20">
       <Topbar showSidebarToggle={false} />
       <main className="flex-1 p-4">{children}</main>
-      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-line/80 bg-surface/95 backdrop-blur-md">
+      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line/80 bg-surface/95 backdrop-blur-md">
         {NAV.map(({ to, key, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end}
             className={({ isActive }) => `flex flex-col items-center gap-1 py-2.5 text-xs ${isActive ? 'font-semibold text-primary' : 'text-muted'}`}>
