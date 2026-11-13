@@ -1,0 +1,27 @@
+# Entorno y secretos
+.env
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Django
+*.log
+staticfiles/
+media/
+private_media/
+db.sqlite3
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/*.tsbuildinfo
+
+# IDEs / SO
+.vscode/
+.idea/
+.DS_Store

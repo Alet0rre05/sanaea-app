@@ -1,0 +1,79 @@
+{
+  "app": { "name": "Prestaciones", "signature": "Made with care by" },
+  "nav": {
+    "dashboard": "Home",
+    "scans": "Timesheets",
+    "settlements": "Settlements",
+    "visits": "Visits",
+    "chat": "Chat",
+    "logout": "Sign out"
+  },
+  "auth": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "invalid": "Invalid credentials.",
+    "antiBot": "Anti-bot check"
+  },
+  "theme": { "toDark": "Switch to dark theme", "toLight": "Switch to light theme" },
+  "view": { "simple": "Simple view", "detailed": "Detailed view" },
+  "privacy": { "blur": "Privacy mode", "hint": "Blurs names and amounts" },
+  "password": {
+    "minLength": "At least 15 characters",
+    "noTripleRepeat": "No 3 identical characters in a row"
+  },
+  "undo": { "message": "Action recorded.", "action": "Undo" },
+  "support": {
+    "open": "AJR Data support",
+    "title": "Support",
+    "placeholder": "Tell us what you need. Do not include patient data.",
+    "send": "Send",
+    "sent": "Message sent to the support team."
+  },
+  "chat": {
+    "banner": "Logistics coordination only. Emergencies: 107/911",
+    "closed": "Chat opens 2 hours before and after the visit."
+  },
+  "scan": {
+    "title": "Timesheets",
+    "upload": "Upload timesheet",
+    "validate": "Validate",
+    "original": "Original timesheet",
+    "extracted": "Extracted data",
+    "zoom": "Zoom",
+    "validated": "Validated",
+    "pending": "Pending review"
+  },
+  "settlement": {
+    "title": "Settlements",
+    "generate": "Generate draft",
+    "validate": "Validate settlement",
+    "total": "Total"
+  },
+  "simulator": {
+    "title": "Rate simulator",
+    "tariff": "Tariff ID",
+    "start": "Start",
+    "end": "End",
+    "holiday": "Holiday",
+    "amount": "Estimated amount"
+  },
+  "coverage": {
+    "title": "Coverage",
+    "completed": "Completed",
+    "missed": "Missed",
+    "scheduled": "Scheduled",
+    "empty": "No visits this month."
+  },
+  "legal": { "pending": "You must accept the current legal documents." },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong. Please try again.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "draftFound": "A saved draft exists on this device.",
+    "restore": "Restore",
+    "discard": "Discard"
+  }
+}

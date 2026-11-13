@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------
+   Tokens de tema: "Clinical Frost" (claro) / "Obsidian Aurora" (oscuro)
+   Valores del documento maestro, sección 3.
+   ------------------------------------------------------------------ */
+:root,
+:root:not([data-theme='dark']) {
+  --canvas: 244 247 251;      /* #F4F7FB */
+  --surface: 255 255 255;     /* #FFFFFF */
+  --line: 226 232 240;        /* #E2E8F0 */
+  --ink: 15 23 42;
+  --muted: 100 116 139;
+  color-scheme: light;
+}
+
+:root.dark {
+  --canvas: 9 13 22;          /* #090D16 */
+  --surface: 17 24 39;        /* #111827 */
+  --line: 51 65 85;           /* slate-700: borde sutil en inputs (cards usan border-white/10) */
+  --ink: 241 245 249;
+  --muted: 148 163 184;
+  color-scheme: dark;
+}
+
+body {
+  background-color: rgb(var(--canvas));
+}
+
+/* Transición bloqueante del tema: todo el CSS cambia en el mismo instante. */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: background-color 260ms ease, border-color 260ms ease,
+    color 260ms ease, fill 260ms ease, stroke 260ms ease, box-shadow 260ms ease !important;
+}
+
+@layer components {
+  /* Superficie con glassmorphism sutil (oscuro: bg-slate-900/80 + blur + borde blanco 10%). */
+  .card {
+    @apply rounded-2xl border border-line/90 bg-surface p-5 shadow-sm;
+  }
+  :root.dark .card {
+    @apply border-white/10 bg-slate-900/80 backdrop-blur-md;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-primary-soft px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-clinical;
+  }
+
+  .kpi-number {
+    @apply font-mono tabular-nums;
+  }
+
+  .sensitive-blur {
+    @apply select-none blur-sm;
+  }
+
+  .badge-ok { @apply rounded-full bg-success/15 px-2 py-0.5 text-xs font-semibold text-success; }
+  .badge-pending { @apply rounded-full bg-warning/15 px-2 py-0.5 text-xs font-semibold text-warning; }
+  .badge-error { @apply rounded-full bg-danger/15 px-2 py-0.5 text-xs font-semibold text-danger; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-transitioning,
+  .theme-transitioning * {
+    transition: none !important;
+  }
+}

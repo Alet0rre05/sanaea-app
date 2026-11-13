@@ -13,7 +13,7 @@ Sistema B2B para digitalizar, auditar y liquidar planillas de prestaciones médi
 | 5 | Frontend: Vite, React, TypeScript, Tailwind, temas Clinical Frost / Obsidian Aurora, `ThemeController`, layouts adaptativos | Código entregado; no compilado |
 | 6 | Split-Screen OCR, widget de soporte, switch Vista Simple/Detallada, Blur Privacidad, autoguardado, offline (IndexedDB), deshacer con toast | Código entregado; no compilado |
 
-> **Importante:** el código se escribió y se revisó sin poder ejecutar Django ni `npm` en el entorno de generación (sin instalación de paquetes). Lo verificado está en la sección [Verificación](#verificación). **No hay migraciones generadas**: deben crearse con `makemigrations` antes de desplegar (ver [Instalación](#instalación-backend)).
+> **Importante:** el código inicial se escribió y se revisó sin poder ejecutar Django ni `npm` en el entorno de generación. Las migraciones iniciales están incluidas; el estado de las verificaciones ejecutadas para esta entrega figura en [Verificación](#verificación).
 
 Documentación adicional: [`docs/API.md`](docs/API.md) (endpoints) y [`docs/DECISIONES.md`](docs/DECISIONES.md) (decisiones y supuestos).
 
@@ -99,13 +99,13 @@ pip install -r requirements.txt
 cp .env.example .env              # completar todas las variables CHANGE_ME
 
 python manage.py check
-python manage.py makemigrations core iam legal operations comms
 python manage.py migrate
 python manage.py createsuperuser  # superadmin de plataforma
 python manage.py runserver
 ```
 
 Las variables obligatorias están en `.env.example`. Si falta alguna, el proceso no arranca.
+Si se modifican los modelos, generar y revisar las migraciones con `python manage.py makemigrations` antes de desplegar.
 
 > Crear `CustomUser` (`AUTH_USER_MODEL = iam.CustomUser`) requiere una base de datos nueva. Django no permite cambiar `AUTH_USER_MODEL` después de la primera migración.
 
@@ -203,11 +203,12 @@ Pasos:
 | Sintaxis de todo el backend (`py_compile`) | Pasa |
 | `render.yaml` parsea como YAML | Pasa |
 | Imports relativos del frontend resuelven a archivos existentes | Pasa |
-| Motor de liquidación (14 pruebas unitarias) | Pasó en una corrida anterior |
-| `pip install`, `manage.py check`, migraciones, pruebas con base de datos | **No ejecutado**: el entorno de generación no puede descargar paquetes (PyPI devuelve 403) |
-| `npm ci`, `typecheck`, `build` del frontend | **No ejecutado** por la misma razón |
+| Motor de liquidación | 14 pruebas unitarias pasan |
+| Migraciones Django | Generadas; `makemigrations --check --dry-run` no detecta cambios |
+| `npm ci` y build/typecheck del frontend | Pasa |
+| Migraciones y pruebas contra PostgreSQL/Neon | No ejecutadas en este entorno |
 
-Antes del primer deploy: `python manage.py check --deploy` y `python manage.py makemigrations` en local con Neon, y `npm run build`.
+Antes del primer deploy, completar las variables de entorno indicadas en la sección [Despliegue en Render](#despliegue-en-render) y ejecutar `python manage.py check --deploy` con la configuración de producción. Render aplicará las migraciones durante el pre-deploy; generar nuevas migraciones solo si se modifican los modelos.
 
 ## Limitaciones conocidas
 

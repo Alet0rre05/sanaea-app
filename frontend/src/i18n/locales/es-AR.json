@@ -1,0 +1,79 @@
+{
+  "app": { "name": "Prestaciones", "signature": "Realizado con cariño por" },
+  "nav": {
+    "dashboard": "Inicio",
+    "scans": "Planillas",
+    "settlements": "Liquidaciones",
+    "visits": "Visitas",
+    "chat": "Chat",
+    "logout": "Cerrar sesión"
+  },
+  "auth": {
+    "title": "Ingresar",
+    "email": "Email",
+    "password": "Contraseña",
+    "submit": "Ingresar",
+    "invalid": "Credenciales inválidas.",
+    "antiBot": "Verificación anti-bot"
+  },
+  "theme": { "toDark": "Cambiar a tema oscuro", "toLight": "Cambiar a tema claro" },
+  "view": { "simple": "Vista simple", "detailed": "Vista detallada" },
+  "privacy": { "blur": "Modo privacidad", "hint": "Difumina nombres y montos" },
+  "password": {
+    "minLength": "Al menos 15 caracteres",
+    "noTripleRepeat": "Sin 3 caracteres idénticos seguidos"
+  },
+  "undo": { "message": "Acción registrada.", "action": "Deshacer" },
+  "support": {
+    "open": "Soporte AJR Data",
+    "title": "Soporte",
+    "placeholder": "Contanos qué necesitás. No incluyas datos de pacientes.",
+    "send": "Enviar",
+    "sent": "Mensaje enviado al equipo de soporte."
+  },
+  "chat": {
+    "banner": "Solo coordinación logística. Urgencias: 107/911",
+    "closed": "El chat se habilita 2 horas antes y después de la visita."
+  },
+  "scan": {
+    "title": "Planillas",
+    "upload": "Subir planilla",
+    "validate": "Validar",
+    "original": "Planilla original",
+    "extracted": "Datos extraídos",
+    "zoom": "Zoom",
+    "validated": "Validada",
+    "pending": "Pendiente de revisión"
+  },
+  "settlement": {
+    "title": "Liquidaciones",
+    "generate": "Generar borrador",
+    "validate": "Validar liquidación",
+    "total": "Total"
+  },
+  "simulator": {
+    "title": "Simulador de tarifa",
+    "tariff": "ID de tarifario",
+    "start": "Inicio",
+    "end": "Fin",
+    "holiday": "Es feriado",
+    "amount": "Monto estimado"
+  },
+  "coverage": {
+    "title": "Cobertura",
+    "completed": "Completadas",
+    "missed": "Faltantes",
+    "scheduled": "Programadas",
+    "empty": "Sin visitas este mes."
+  },
+  "legal": { "pending": "Debés aceptar los documentos legales vigentes." },
+  "common": {
+    "loading": "Cargando…",
+    "error": "Ocurrió un error. Intentá de nuevo.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "draftFound": "Hay un borrador guardado en este dispositivo.",
+    "restore": "Retomar",
+    "discard": "Descartar"
+  }
+}
