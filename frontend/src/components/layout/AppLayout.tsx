@@ -1,20 +1,21 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, EyeOff, FileText, Home, LogOut, Receipt, MessageCircle, ShieldCheck, Leaf } from 'lucide-react';
+import { ChevronLeft, ChevronRight, EyeOff, FileText, Home, LogOut, Receipt, MessageCircle, ShieldCheck, Leaf, UserRound, BookOpen } from 'lucide-react';
 import { Switch } from '@headlessui/react';
 import { ThemeToggleButton } from '../../theme/ThemeToggleButton';
 import { usePreferences } from '../../context/PreferencesContext';
 import { useSession } from '../../context/SessionContext';
 import { Footer } from './Footer';
 import { SupportWidget } from '../support/SupportWidget';
+import { NotificationsBell } from '../notifications/NotificationsBell';
 
 const NAV = [
   { to: '/', key: 'nav.dashboard', icon: Home, end: true },
   { to: '/scans', key: 'nav.scans', icon: FileText, end: false },
   { to: '/settlements', key: 'nav.settlements', icon: Receipt, end: false },
   { to: '/chat', key: 'nav.chat', icon: MessageCircle, end: false },
-  { to: '/legal', key: 'nav.legal', icon: ShieldCheck, end: false },
+  { to: '/documents', key: 'nav.legal', icon: ShieldCheck, end: false },
 ];
 
 function useIsMobile(): boolean {
@@ -66,6 +67,9 @@ function Topbar({ onToggleSidebar, showSidebarToggle }: { onToggleSidebar?: () =
           </Switch>
           <span className={viewMode === 'detailed' ? 'font-semibold' : 'text-muted'}>{t('view.detailed')}</span>
         </div>
+        <span className="hidden xl:inline max-w-[220px] text-[11px] leading-4 text-muted" title={viewMode === 'simple' ? 'Muestra lo esencial y oculta detalles secundarios.' : 'Muestra información ampliada y contexto adicional en los módulos.'}>
+          {viewMode === 'simple' ? 'Esencial y fácil de leer' : 'Información ampliada'}
+        </span>
 
         <button type="button" onClick={() => setBlurPrivate(!blurPrivate)} aria-pressed={blurPrivate}
           title={t('privacy.hint')}
@@ -73,6 +77,18 @@ function Topbar({ onToggleSidebar, showSidebarToggle }: { onToggleSidebar?: () =
           <EyeOff className="h-4 w-4" />
           <span className="sr-only">{t('privacy.blur')}</span>
         </button>
+
+        <NotificationsBell />
+
+        <NavLink to="/tutoriales" aria-label="Tutoriales y ayuda" title="Tutoriales y ayuda"
+          className={({ isActive }) => `grid h-9 w-9 place-items-center rounded-full border bg-surface transition ${isActive ? 'border-primary text-primary' : 'border-line'}`}>
+          <BookOpen className="h-4 w-4" />
+        </NavLink>
+
+        <NavLink to="/cuenta" aria-label="Mi cuenta" title="Mi cuenta"
+          className={({ isActive }) => `grid h-9 w-9 place-items-center rounded-full border bg-surface transition ${isActive ? 'border-primary text-primary' : 'border-line'}`}>
+          <UserRound className="h-4 w-4" />
+        </NavLink>
 
         <ThemeToggleButton />
 
@@ -88,9 +104,10 @@ function Topbar({ onToggleSidebar, showSidebarToggle }: { onToggleSidebar?: () =
 
 function DesktopLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
+  const { viewMode } = usePreferences();
   const [collapsed, setCollapsed] = useState(false);
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen" data-view-mode={viewMode}>
       <aside className={`sticky top-0 flex h-screen flex-col gap-1 border-r border-line/80 bg-surface/70 p-3 backdrop-blur-md transition-all ${collapsed ? 'w-16' : 'w-60'}`}>
         <button type="button" onClick={() => setCollapsed(!collapsed)} aria-label="Colapsar menú"
           className="mb-2 self-end rounded-lg p-1.5 text-muted hover:bg-canvas">
@@ -115,8 +132,9 @@ function DesktopLayout({ children }: { children: ReactNode }) {
 
 function MobileLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
+  const { viewMode } = usePreferences();
   return (
-    <div className="flex min-h-screen flex-col pb-20">
+    <div className="flex min-h-screen flex-col pb-20" data-view-mode={viewMode}>
       <Topbar showSidebarToggle={false} />
       <main className="flex-1 p-4">{children}</main>
       <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line/80 bg-surface/95 backdrop-blur-md">
