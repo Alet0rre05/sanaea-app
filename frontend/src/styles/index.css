@@ -85,3 +85,40 @@ button,a,input,select,textarea { -webkit-tap-highlight-color:transparent; }
 @media(max-width:900px) { .welcome-art { right:-65px;opacity:.5; }.chat-intro-symbol { right:7%;opacity:.55; } }
 @media(max-width:640px) { .welcome-panel,.chat-intro-panel { min-height:240px;padding:23px 20px;border-radius:23px; }.welcome-art { right:-135px;opacity:.28; }.chat-intro-symbol { display:none; }.page-stack { gap:22px; }.section-heading { align-items:flex-start;flex-direction:column; }.mobile-nav a { font-size:10px; } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important; } }
+
+/* Sanae ambient motion: soft floating color fields behind the application. */
+body::before, body::after { content:""; position:fixed; z-index:-1; pointer-events:none; border-radius:50%; filter:blur(70px); opacity:.34; will-change:transform; }
+body::before { width: min(48vw,620px); height:min(48vw,620px); left:-14vw; top:12vh; background:radial-gradient(circle,rgba(62,203,151,.25),rgba(62,203,151,0) 68%); animation:sanae-drift-a 24s ease-in-out infinite alternate; }
+body::after { width:min(42vw,540px); height:min(42vw,540px); right:-12vw; top:42vh; background:radial-gradient(circle,rgba(75,174,185,.19),rgba(75,174,185,0) 70%); animation:sanae-drift-b 30s ease-in-out infinite alternate; }
+@keyframes sanae-drift-a { 0% { transform:translate3d(0,0,0) scale(.9); } 50% { transform:translate3d(10vw,7vh,0) scale(1.12); } 100% { transform:translate3d(3vw,18vh,0) scale(1.02); } }
+@keyframes sanae-drift-b { 0% { transform:translate3d(0,0,0) scale(1); } 50% { transform:translate3d(-9vw,-9vh,0) scale(1.15); } 100% { transform:translate3d(-3vw,8vh,0) scale(.92); } }
+.view-guide { background:linear-gradient(120deg,rgb(var(--surface)/.94),rgb(var(--surface)/.72)); backdrop-filter:blur(14px); }
+@media(prefers-reduced-motion:reduce) { body::before,body::after { animation:none!important; } }
+body::before, body::after { z-index:0; }
+#root { position:relative; z-index:1; min-height:100vh; }
+
+/* Bento dashboard: grilla de 12 columnas, tarjetas de distinto tamaño. */
+.bento { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; }
+@media(min-width:640px) { .bento { gap:16px; } }
+.bento > * { min-width:0; }
+.bento-tile { display:flex; flex-direction:column; min-height:168px; transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease; }
+.bento-kpi { display:flex; flex-direction:column; min-height:200px; transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease; }
+.bento-tile:hover,.bento-kpi:hover { transform:translateY(-3px); border-color:rgba(27,166,119,.42); box-shadow:0 14px 34px rgba(14,103,70,.09); }
+.bento-kpi--alert { border-color:rgba(245,183,70,.45); background:linear-gradient(160deg,rgb(var(--surface)),rgba(245,183,70,.07)); }
+.bento-step { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid rgb(var(--line)/.7); border-radius:12px; background:rgb(var(--canvas)/.5); }
+/* Una sola entrada orquestada al cargar; respeta prefers-reduced-motion (reglas globales). */
+.bento-in { animation:bento-rise 560ms cubic-bezier(.2,.7,.2,1) both; animation-delay:calc(var(--i,0) * 60ms); }
+@keyframes bento-rise { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+/* Contenido de Vista detallada: aparece con un desvanecido suave. */
+.detail-reveal { animation:detail-in 320ms ease-out both; }
+@keyframes detail-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+/* Campana de notificaciones */
+.notif-badge { position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 5px; display:grid; place-items:center; border-radius:999px; background:#FB7185; color:#fff; font-size:10px; font-weight:800; line-height:1; box-shadow:0 0 0 2px rgb(var(--canvas)); }
+.notif-empty { display:grid; justify-items:center; gap:4px; padding:22px 12px; text-align:center; border:1px dashed rgb(var(--line)); border-radius:14px; }
+@media(max-width:639px) { .bento-tile,.bento-kpi { min-height:0; } }
+
+/* Tutoriales, FAQ y gráficas */
+.tutorial-step { animation:detail-in 380ms ease-out both; }
+.faq-panel { animation:detail-in 280ms ease-out both; }
+.chart-bar { transition:width 700ms cubic-bezier(.2,.7,.2,1); }
+@media(prefers-reduced-motion:reduce) { .chart-bar { transition:none; } }
