@@ -1,372 +1,219 @@
 # Plataforma SaaS Multi-Tenant — Prestaciones Médicas Domiciliarias
 
-Sistema B2B SaaS para la **digitalización, auditoría y liquidación automática** de planillas de prestaciones médicas domiciliarias (enfermeros, cuidadores, kinesiólogos).
+Sistema B2B para digitalizar, auditar y liquidar planillas de prestaciones médicas domiciliarias (enfermeros, cuidadores, kinesiólogos). Lo desarrolla AJR Data según el documento maestro del proyecto.
 
-Objetivos de negocio del documento maestro:
+## Estado del proyecto
 
-- Eliminar la fricción del papel en la carga de planillas de visitas.
-- Automatizar los cruces tarifarios y el cálculo de liquidaciones.
-- Ofrecer interfaces adaptadas a cada tipo de usuario: administrativos, prestadores en terreno, familiares de pacientes y el equipo de soporte interno (**AJR Data**).
-
-> **Estado actual: Fase 1 entregada.** Según el documento maestro, el desarrollo avanza por fases y **cada fase requiere confirmación explícita antes de continuar**. Ver [Roadmap](#roadmap-por-fases).
-
----
-
-## Tabla de contenidos
-
-1. [Stack tecnológico](#stack-tecnológico)
-2. [Arquitectura](#arquitectura)
-3. [Modelo de roles](#modelo-de-roles)
-4. [Estructura del proyecto](#estructura-del-proyecto)
-5. [Modelos base (Fase 1)](#modelos-base-fase-1)
-6. [Variables de entorno](#variables-de-entorno)
-7. [Instalación local](#instalación-local)
-8. [Despliegue](#despliegue)
-9. [Seguridad y cumplimiento normativo](#seguridad-y-cumplimiento-normativo)
-10. [Roadmap por fases](#roadmap-por-fases)
-11. [Decisiones abiertas y supuestos](#decisiones-abiertas-y-supuestos)
-12. [Verificación](#verificación)
-
----
-
-## Stack tecnológico
-
-### Backend
-
-| Componente | Tecnología | Notas |
+| Fase | Contenido | Estado |
 |---|---|---|
-| Framework | Django 5.x + Django REST Framework | `Django>=5.1,<6.0` |
-| Base de datos | PostgreSQL alojada en **Neon** | SSL obligatorio (`DB_SSLMODE=require`) |
-| Adaptador DB | `psycopg` 3 (`psycopg[binary,pool]`) | Pool de conexiones nativo (`OPTIONS.pool = True`) |
-| Autenticación | JWT (Access 15 min + Refresh rotativo) y OTP por correo | **Fase 2** |
-| Seguridad | Cloudflare Turnstile en login, registro y recuperación | **Fase 2** |
-| Cifrado de PHI | Fernet (`cryptography`) a nivel de campo | Implementado en Fase 1 (helper) |
-| Despliegue | Render / Railway | Decisión pendiente, ver [Despliegue](#despliegue) |
+| 1 | README, `.env.example`, proyecto Django, `core` (UUIDv7, auditoría, soft delete, multi-tenant, cifrado) | Código entregado |
+| 2 | `iam` (CustomUser, validador de 15 caracteres sin triple repetición, OTP por correo, Turnstile, JWT con refresh rotativo, roles) y `legal` (versiones, aceptaciones inmutables, consentimiento, baja) | Código entregado (backend) |
+| 3 | `operations` (pacientes, prestadores, obras sociales, tarifarios, visitas, planillas con pHash, evoluciones, liquidaciones, `SettlementStrategy`) | Código entregado; motor de cálculo con pruebas unitarias |
+| 4 | API DRF (ViewSets, errores estandarizados, telemetría sanitizada), chats `ScopedVisitChat` e `InternalContextThread`, soporte global | Código entregado |
+| 5 | Frontend: Vite, React, TypeScript, Tailwind, temas Clinical Frost / Obsidian Aurora, `ThemeController`, layouts adaptativos | Código entregado; no compilado |
+| 6 | Split-Screen OCR, widget de soporte, switch Vista Simple/Detallada, Blur Privacidad, autoguardado, offline (IndexedDB), deshacer con toast | Código entregado; no compilado |
 
-### Frontend (Fases 5 y 6)
+> **Importante:** el código se escribió y se revisó sin poder ejecutar Django ni `npm` en el entorno de generación (sin instalación de paquetes). Lo verificado está en la sección [Verificación](#verificación). **No hay migraciones generadas**: deben crearse con `makemigrations` antes de desplegar (ver [Instalación](#instalación-backend)).
 
-| Componente | Tecnología |
-|---|---|
-| Framework | React 18+ con Vite y TypeScript |
-| Estilos | Tailwind CSS 3.x + Headless UI / Radix UI |
-| Internacionalización | `react-i18next` (es-AR por defecto, en) |
-| Estado y datos | TanStack Query (React Query) + Axios con interceptores JWT |
-| Iconografía | Lucide React |
-| Mobile | Arquitectura PWA / Mobile-First preparada para Capacitor (APK/iOS) |
-| Despliegue | Vercel |
+Documentación adicional: [`docs/API.md`](docs/API.md) (endpoints) y [`docs/DECISIONES.md`](docs/DECISIONES.md) (decisiones y supuestos).
+
+---
+
+## Stack
+
+**Backend:** Django 5.1+, Django REST Framework, PostgreSQL en Neon (psycopg 3 con pool nativo), PyJWT, `cryptography` (Fernet), Pillow + imagehash (pHash), django-cors-headers.
+
+**Frontend:** React 18, Vite, TypeScript, Tailwind CSS 3, Headless UI, TanStack Query, Axios, react-i18next (es-AR y en), lucide-react, IndexedDB para modo offline.
+
+**Despliegue:** Render (backend y frontend, ver `render.yaml`). La decisión Render vs Railway queda resuelta a favor de Render.
 
 ---
 
 ## Arquitectura
 
-### Principios
+### Multi-tenancy (Shared Database / Shared Schema)
 
-- **POO y SOLID**, con patrones de diseño para mantenibilidad.
-- **Shared Database / Shared Schema** con filtrado estricto por `tenant_id`.
-- **Service Layer**: la lógica de negocio vive en servicios (`TimesheetProcessingService`, `LegalComplianceService`, etc.). Las vistas solo serializan y validan.
-- **Strategy** para el motor de liquidación (`SettlementStrategy`).
+Tres capas de defensa, descritas en `core/`:
 
-### Aislamiento multi-tenant
+1. **`TenantMiddleware`** reinicia el contexto de tenant en cada petición.
+2. **`TenantManager`** (manager por defecto de `TenantAwareModel`) filtra por el tenant activo y excluye registros con soft delete. Sin tenant activo devuelve `none()` (fail-closed).
+3. **`TenantAwareModel.save()`** asigna el tenant activo y rechaza escrituras de otra agencia (`CrossTenantWriteError`).
 
-Tres capas de defensa:
-
-1. **`TenantMiddleware`** reinicia el contexto de tenant en cada petición (sin fugas entre solicitudes).
-2. **`TenantManager`** (manager por defecto de `TenantAwareModel`) filtra automáticamente por el tenant activo y excluye registros con soft delete. Sin tenant activo devuelve un queryset vacío (*fail-closed*).
-3. **`TenantAwareModel.save()`** asigna el tenant activo a los registros nuevos y rechaza escrituras de otro tenant (`CrossTenantWriteError`).
-
-El contexto se guarda en un `ContextVar`, por lo que es seguro con hilos y con código asíncrono.
+El tenant activo se fija en la autenticación a partir de la cabecera `X-Tenant-ID`, validada contra una membresía activa. El contexto usa `ContextVar`.
 
 ### Capas
 
-```
-┌──────────────────────────────────────────────┐
-│ Vistas DRF (serializan / validan)            │  Fase 4
-├──────────────────────────────────────────────┤
-│ Services (lógica de negocio)                 │  Fases 2–4
-│  - LegalComplianceService                    │
-│  - TimesheetProcessingService                │
-├──────────────────────────────────────────────┤
-│ Strategies de liquidación                    │  Fase 3
-│  - BaseBillingCalculator (abstracta)         │
-│  - HourlyBillingStrategy                     │
-│  - PerVisitBillingStrategy                   │
-├──────────────────────────────────────────────┤
-│ Modelos (core: BaseAuditModel,               │  Fase 1
-│          TenantAwareModel, Tenant)           │
-├──────────────────────────────────────────────┤
-│ PostgreSQL (Neon) · psycopg3 + pool          │
-└──────────────────────────────────────────────┘
-```
+- **Vistas DRF:** validan y serializan. Permisos declarados por recurso (`allowed_roles`, `write_roles`).
+- **Servicios** (`iam/services.py`, `legal/services.py`, `operations/services.py`, `comms/services.py`): toda la lógica de negocio.
+- **Strategies de liquidación** (`operations/billing.py`): `BaseBillingCalculator` abstracta, `HourlyBillingStrategy`, `PerVisitBillingStrategy`. Módulo puro, sin ORM.
+- **Modelos** y **utilidades** (`core/`).
+
+### Apps
+
+| App | Responsabilidad |
+|---|---|
+| `core` | `BaseAuditModel`, `TenantAwareModel`, `Tenant`, middleware, contexto, UUIDv7, cifrado, telemetría, manejador de errores, registros inmutables |
+| `iam` | Usuario, membresías por agencia, OTP, JWT, Turnstile, permisos por rol |
+| `legal` | Documentos versionados, aceptaciones inmutables, consentimiento informado, baja de agencia |
+| `operations` | Dominio de salud y liquidación |
+| `comms` | Chat operativo de visita, hilos internos, soporte global sanitizado |
+
+### Roles
+
+| Rol | Alcance |
+|---|---|
+| `PLATFORM_SUPERADMIN` / `PLATFORM_SUPPORT` | AJR Data. Gestionan infraestructura y soporte. |
+| `TENANT_OWNER` / `TENANT_ADMIN` | Agencia y facturación. Solo `OWNER` puede dar de baja la agencia y crear otros `OWNER`. |
+| `TENANT_LIQUIDATOR` | Liquidaciones, planillas y resumen de visitas. |
+| `TENANT_MEDICAL_AUDITOR` | Evoluciones médicas completas. Sin facturación. |
+| `TENANT_PROVIDER` | Solo sus visitas y pacientes. Matrícula verificada por la agencia. |
+| `TENANT_FAMILY_CLIENT` | Solo su paciente vinculado, tras verificar el vínculo por OTP. Firma consentimientos. |
+
+La autorización por recurso se resume en `iam/permissions.py` y `operations/scoping.py`.
 
 ---
 
-## Modelo de roles
+## Seguridad
 
-Principio de **privacidad inversa**: cada rol ve únicamente lo que necesita.
-
-| Rol | Ámbito | Acceso |
-|---|---|---|
-| `PLATFORM_SUPERADMIN` | AJR Data | Gestiona infraestructura. **No ve datos médicos.** |
-| `PLATFORM_SUPPORT` | AJR Data | Soporte técnico. **No ve datos médicos.** |
-| `TENANT_OWNER` | Agencia | Gestiona agencia y facturación. Acceso al botón de arrepentimiento/baja. |
-| `TENANT_ADMIN` | Agencia | Gestiona agencia y facturación. |
-| `TENANT_LIQUIDATOR` | Agencia | Cálculos y OCR. Ve el **resumen** de la visita, no el historial médico profundo. |
-| `TENANT_MEDICAL_AUDITOR` | Agencia | Ve evoluciones médicas completas. **No ve facturación.** |
-| `TENANT_PROVIDER` (enfermero) | Agencia | Verificado por matrícula. Ve solo sus pacientes. |
-| `TENANT_FAMILY_CLIENT` (familiar) | Agencia | Verificado por OTP. Ve solo su paciente asociado y valida firmas. |
-
-> Los roles se implementarán en la **Fase 2** (app `iam`).
+- **Contraseñas:** mínimo 15 caracteres y prohibidos 3 caracteres idénticos consecutivos (`(.)\1\1`), validadores en `iam/validators.py`. El frontend muestra los 2 checks en verde (`PasswordChecks`).
+- **JWT:** access de 15 minutos. Refresh rotativo en cookie `HttpOnly; Secure; SameSite=None`, limitada a `/api/v1/auth/`. Reutilizar un refresh ya rotado revoca toda su familia.
+- **OTP:** 6 dígitos, se guarda solo su HMAC-SHA256, expira y tiene un máximo de intentos. Un código nuevo invalida los anteriores.
+- **Turnstile:** verificación en login, registro y recuperación. Falla cerrada si Cloudflare no responde.
+- **Enumeración:** registro y recuperación responden igual exista o no la cuenta.
+- **Cifrado de PHI:** `EncryptedTextField` (Fernet) en nombre, documento, dirección, evoluciones, firmas, planillas extraídas y mensajes de chat.
+- **Registros legales inmutables:** `LegalAcceptanceLog`, `InformedConsent`, `TenantWithdrawal`. No admiten UPDATE ni DELETE.
+- **Telemetría:** `core/telemetry.py` enmascara claves de PHI y patrones de correo, teléfono y DNI en logs y respuestas de error.
+- **Chat operativo:** solo abierto 2 horas antes y después de la visita, con el banner "Solo coordinación logística. Urgencias: 107/911".
+- **Soporte:** el texto que el tenant envía a AJR Data se sanitiza antes de guardarse.
 
 ---
 
-## Estructura del proyecto
+## Instalación local (backend)
 
-```
-prestaciones-saas/
-├── README.md                  # Esta documentación
-├── .env.example               # Plantilla de variables de entorno
-├── .gitignore
-├── requirements.txt           # Dependencias Python
-├── manage.py                  # CLI de Django
-├── config/                    # Configuración del proyecto
-│   ├── __init__.py
-│   ├── settings.py            # Settings leídos desde entorno
-│   ├── urls.py                # Enrutamiento raíz
-│   ├── wsgi.py
-│   └── asgi.py
-└── core/                      # Fase 1: base multi-tenant y auditoría
-    ├── __init__.py
-    ├── apps.py
-    ├── models.py              # BaseAuditModel, TenantAwareModel, Tenant
-    ├── managers.py            # SoftDeleteQuerySet, TenantManager
-    ├── middleware.py          # TenantMiddleware
-    ├── tenant_context.py      # ContextVar del tenant activo
-    ├── exceptions.py          # CrossTenantWriteError, TenantNotSetError
-    ├── migrations/
-    │   └── __init__.py
-    └── utils/
-        ├── __init__.py
-        ├── ids.py             # uuid7() — UUIDv7 (RFC 9562)
-        └── crypto.py          # EncryptedTextField (Fernet)
+Requisitos: Python 3.12 o superior y una base PostgreSQL con SSL (Neon).
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env              # completar todas las variables CHANGE_ME
+
+python manage.py check
+python manage.py makemigrations core iam legal operations comms
+python manage.py migrate
+python manage.py createsuperuser  # superadmin de plataforma
+python manage.py runserver
 ```
 
-Carpetas previstas para fases siguientes: `iam/`, `legal/`, `operations/`, y el frontend en `frontend/` (Fases 2, 3, 5 y 6).
+Las variables obligatorias están en `.env.example`. Si falta alguna, el proceso no arranca.
 
----
-
-## Modelos base (Fase 1)
-
-### `BaseAuditModel` (abstracto)
-
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `id` | `UUIDField` (UUIDv7) | Clave primaria, ordenable cronológicamente |
-| `created_at` | `DateTimeField` | Fecha de creación (auto) |
-| `updated_at` | `DateTimeField` | Fecha de última modificación (auto) |
-| `created_by` | `UUIDField` (nullable) | UUID del usuario creador. Pasará a FK en Fase 2 |
-| `is_deleted` | `BooleanField` | Soft delete. Indexado |
-
-Método `soft_delete()`: marca `is_deleted=True` sin borrar el registro.
-
-### `TenantAwareModel` (abstracto, hereda de `BaseAuditModel`)
-
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `tenant` | `ForeignKey(Tenant, PROTECT)` | Agencia propietaria del registro. Indexado |
-
-Managers:
-
-- `objects` → `TenantManager`: filtrado por tenant activo y soft delete.
-- `unscoped` → `Manager` sin filtro. **Solo para procesos de plataforma.** Nunca usar en vistas.
-
-### `Tenant`
-
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `name` | `CharField(200)` | Nombre de la agencia |
-| `slug` | `SlugField(120)`, único | Identificador legible |
-| `is_active` | `BooleanField` | Estado de la agencia |
-
-> `Tenant` no figura como modelo explícito en el documento maestro. Se introduce porque `tenant_id` requiere una entidad de referencia. Ver [Decisiones abiertas](#decisiones-abiertas-y-supuestos).
-
-### `EncryptedTextField`
-
-`TextField` que cifra su contenido con Fernet al escribir y lo descifra al leer. Previsto para datos de PHI (diagnósticos, evoluciones, etc.) desde la Fase 3.
-
-### `uuid7()`
-
-Generador de UUIDv7 incluido en `core/utils/ids.py`, porque Python 3.13 no lo trae en la biblioteca estándar.
-
----
-
-## Variables de entorno
-
-Definidas en `.env.example`. Copiar a `.env` y completar. **Nunca commitear `.env`.**
-
-| Variable | Obligatoria | Fase | Descripción |
-|---|---|---|---|
-| `DJANGO_SECRET_KEY` | Sí | 1 | Clave secreta de Django |
-| `DJANGO_DEBUG` | No | 1 | `False` en producción (por defecto) |
-| `DJANGO_ALLOWED_HOSTS` | Sí en producción | 1 | Hosts separados por coma |
-| `DJANGO_SECURE_SSL_REDIRECT` | No | 1 | Redirección HTTPS (activa si `DEBUG=False`) |
-| `DJANGO_HSTS_SECONDS` | No | 1 | Duración de HSTS. `0` por defecto, subir en producción tras validar |
-| `DB_NAME` | Sí | 1 | Base de datos en Neon |
-| `DB_USER` | Sí | 1 | Usuario de base de datos |
-| `DB_PASSWORD` | Sí | 1 | Contraseña de base de datos |
-| `DB_HOST` | Sí | 1 | Host de Neon |
-| `DB_PORT` | No | 1 | `5432` por defecto |
-| `DB_SSLMODE` | No | 1 | `require` por defecto |
-| `FIELD_ENCRYPTION_KEY` | Sí | 1 | Clave Fernet para cifrado de PHI |
-| `JWT_SIGNING_KEY` | Sí | 2 | Clave de firma de JWT |
-| `JWT_ACCESS_TOKEN_MINUTES` | No | 2 | `15` según el documento maestro |
-| `JWT_REFRESH_TOKEN_DAYS` | Sí | 2 | **Pendiente de definir** |
-| `TURNSTILE_SECRET_KEY` | Sí | 2 | Secret key de Cloudflare Turnstile |
-| `TURNSTILE_VERIFY_URL` | No | 2 | Endpoint oficial de verificación de Turnstile |
-| `DEFAULT_FROM_EMAIL` | No | 2 | `no-reply@ajrdata.com.ar` según el documento maestro |
-| `EMAIL_BACKEND` | No | 2 | Consola en desarrollo, SMTP en producción |
-| `EMAIL_HOST` / `EMAIL_PORT` | Sí (SMTP) | 2 | **Proveedor SMTP pendiente de definir** |
-| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | Sí (SMTP) | 2 | Credenciales SMTP |
-| `EMAIL_USE_TLS` | No | 2 | `True` por defecto |
+> Crear `CustomUser` (`AUTH_USER_MODEL = iam.CustomUser`) requiere una base de datos nueva. Django no permite cambiar `AUTH_USER_MODEL` después de la primera migración.
 
 Generación de claves:
 
 ```bash
-# Django
-python -c "import secrets; print(secrets.token_urlsafe(64))"
-
-# Fernet (cifrado de campos)
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+python -c "import secrets; print(secrets.token_urlsafe(64))"                         # DJANGO_SECRET_KEY, JWT_SIGNING_KEY
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # FIELD_ENCRYPTION_KEY
 ```
 
----
-
-## Instalación local
-
-Requisitos: Python 3.12+ (probado en diseño con 3.13), una base PostgreSQL (Neon u otra) con SSL.
+## Instalación local (frontend)
 
 ```bash
-# 1. Crear y activar entorno virtual
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-
-# 2. Instalar dependencias
-pip install -r requirements.txt
-
-# 3. Configurar entorno
-cp .env.example .env
-# Completar .env con valores reales (ver tabla anterior)
-
-# 4. Generar migraciones de la app core y aplicarlas
-python manage.py makemigrations core
-python manage.py migrate
-
-# 5. Crear superusuario de plataforma (Django admin, temporal hasta Fase 2)
-python manage.py createsuperuser
-
-# 6. Levantar servidor de desarrollo
-python manage.py runserver
+cd frontend
+cp .env.example .env              # VITE_API_URL y VITE_TURNSTILE_SITE_KEY
+npm install
+npm run typecheck
+npm run dev
 ```
-
-> **Importante:** la primera migración de `core` debe generarse con `makemigrations` y versionarse en el repositorio. Cuando se incorpore el modelo `CustomUser` (Fase 2), la base de datos debe crearse desde cero, porque Django no permite cambiar `AUTH_USER_MODEL` después de la primera migración.
 
 ---
 
-## Despliegue
+## Pruebas
 
-El documento maestro indica **Render / Railway** para el backend y **Vercel** para el frontend. Esa elección queda pendiente. Requisitos ya previstos en la configuración:
-
-- Variables de entorno gestionadas por la plataforma (nunca en el repositorio).
-- `DJANGO_DEBUG=False` y `DJANGO_ALLOWED_HOSTS` con el dominio final.
-- Proxy HTTPS: `SECURE_PROXY_SSL_HEADER` configurado para `X-Forwarded-Proto`.
-- Base de datos en Neon con SSL obligatorio.
-
-Comando de arranque para producción (un servidor WSGI como Gunicorn debe agregarse a `requirements.txt` antes de desplegar; **no incluido en Fase 1**):
+Las pruebas sin base de datos se ejecutan directamente:
 
 ```bash
-python manage.py migrate && gunicorn config.wsgi:application
+python -m unittest operations.tests.test_billing comms.tests
+```
+
+Las pruebas que requieren base de datos (aislamiento de tenant, cifrado de campos, soft delete) corren con:
+
+```bash
+python manage.py test
 ```
 
 ---
 
-## Seguridad y cumplimiento normativo
+## Despliegue en Render
 
-### Requisitos del documento maestro
+El repositorio tiene dos servicios definidos en `render.yaml` (Blueprint):
 
-- **HIPAA / Ley 25.326 (Argentina)**: protección de datos personales y de salud.
-- **Cifrado de PHI**: a nivel de campo (Fernet / AES-256 según el documento).
-- **Contraseñas**: mínimo 15 caracteres; prohibidos 3 caracteres idénticos consecutivos (`/(.)\1\1/`). **Fase 2.**
-- **Tokens**: Access 15 min + Refresh rotativo, en cookies `HttpOnly; Secure; SameSite=None` o headers. **Fase 2.**
-- **Protección de endpoints** de login, registro y recuperación con Cloudflare Turnstile. **Fase 2.**
-- **OTP** por correo para recuperación y cambios críticos de email, email de respaldo y username. **Fase 2.**
-- **Consentimiento inmutable**: registros con timestamp, IP y hash SHA-256 del documento aceptado. **Fase 2.**
-- **Telemetría sanitizada** y errores estandarizados. **Fase 4.**
+| Servicio | Tipo | Carpeta | Build | Start |
+|---|---|---|---|---|
+| `sanaea-api` | Web (Python) | `backend/` | `pip install -r requirements.txt && python manage.py collectstatic --noinput` | `gunicorn config.wsgi:application` |
+| `sanaea-web` | Sitio estático | `frontend/` | `npm ci && npm run build` | publica `dist/` con reescritura SPA |
 
-### Estado en Fase 1
+Pasos:
 
-| Control | Estado |
-|---|---|
-| Aislamiento por tenant (manager + middleware + save) | Implementado |
-| Soft delete | Implementado |
-| Fail-closed sin tenant activo | Implementado |
-| Cifrado de campos (helper Fernet) | Implementado, sin uso aún |
-| Cookies seguras y HSTS en producción | Configurado |
-| DRF denegando por defecto | Configurado |
-| Autenticación, roles y OTP | Pendiente (Fase 2) |
-| Auditoría de accesos a PHI | Pendiente |
+1. Subir el repositorio a GitHub o GitLab.
+2. En Render: **New > Blueprint** y seleccionar el repositorio. Render lee `render.yaml`.
+3. Completar las variables marcadas como `sync: false` (ver tabla abajo).
+4. Esperar el primer deploy del backend. `preDeployCommand` ejecuta `migrate` antes de cada despliegue.
+5. Crear el superadmin desde la Shell del servicio `sanaea-api`: `python manage.py createsuperuser`.
+6. Cargar los documentos legales vigentes y configurar `LEGAL_REQUIRED_KINDS` si corresponde.
 
-### Advertencia sobre el cifrado
+### Variables que hay que completar
 
-El documento maestro menciona "Fernet / AES-256". **Fernet usa AES-128 en modo CBC con HMAC-SHA256**, no AES-256. Si el requisito es estrictamente AES-256, la alternativa es `AESGCM` de `cryptography` con clave de 32 bytes. Pendiente de confirmar antes de la Fase 3.
-
----
-
-## Roadmap por fases
-
-| Fase | Contenido | Estado |
+| Variable | Servicio | Valor |
 |---|---|---|
-| **1** | README, `.env.example`, proyecto Django, app `core` (BaseAuditModel, TenantAwareModel, TenantMiddleware, cifrado base) | **Entregada** |
-| 2 | App `iam`: `CustomUser`, validador de contraseñas, OTP por correo, Turnstile, JWT, roles. App `legal`: documentos versionados, logs de aceptación inmutables | Pendiente de confirmación |
-| 3 | App `operations`: pacientes, profesionales, obras sociales. `SettlementStrategy` para tarifarios. `TimesheetScan`, `DailyEvolution` | Pendiente |
-| 4 | Serializers y ViewSets DRF. Chats: `ScopedVisitChat`, `InternalContextThread`. Telemetría sanitizada y errores estandarizados | Pendiente |
-| 5 | Frontend: Vite, React, Tailwind, temas *Clinical Frost* / *Obsidian Aurora*, `ThemeController`, layouts adaptativos | Pendiente |
-| 6 | Frontend: Split-Screen OCR, widget de soporte, switch Vista Simple/Detallada, modo Blur Privacidad | Pendiente |
+| `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | api | Datos de conexión de Neon (copiar desde console.neon.tech) |
+| `FIELD_ENCRYPTION_KEY` | api | Clave Fernet: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
+| `JWT_REFRESH_TOKEN_DAYS`, `OTP_EXPIRY_MINUTES`, `OTP_MAX_ATTEMPTS` | api | **Pendientes de definir por el equipo** |
+| `TURNSTILE_SECRET_KEY` | api | Secret key de Cloudflare Turnstile |
+| `CORS_ALLOWED_ORIGINS` | api | URL del sitio, ej. `https://sanaea-web.onrender.com` |
+| `EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | api | **Proveedor SMTP pendiente de definir** |
+| `VITE_API_URL` | web | URL de la API, ej. `https://sanaea-api.onrender.com/api/v1` |
+| `VITE_TURNSTILE_SITE_KEY` | web | Site key pública de Turnstile |
 
-Cada fase se entrega por separado y requiere confirmación explícita antes de comenzar.
+`DJANGO_SECRET_KEY` y `JWT_SIGNING_KEY` se generan solas (`generateValue`). Las dos se deben mantener en secreto y no se deben reutilizar.
 
----
+> `VITE_*` se incrustan en el build del frontend. Si cambian, hay que volver a desplegar `sanaea-web`.
 
-## Decisiones abiertas y supuestos
+### Notas de despliegue
 
-Puntos que el documento maestro no define. Se resolvieron de la forma indicada o quedan pendientes:
+- **Planillas escaneadas:** se guardan en el disco persistente `planillas` montado en `/var/data/planillas` (10 GB). El disco requiere un plan pago; por eso el backend usa `starter`.
+- **Base de datos:** Neon queda fuera de Render. Neon exige SSL (`DB_SSLMODE=require`).
+- **Health check:** `GET /healthz/` responde sin consultar la base.
+- **Dominio propio:** agregarlo en Render y actualizar `CORS_ALLOWED_ORIGINS` y `VITE_API_URL`.
+- **Vercel:** el archivo `frontend/vercel.json` no se usa con Render. Puede eliminarse.
+- **Gunicorn y WhiteNoise:** incluidos en `requirements.txt`. WhiteNoise sirve los estáticos del admin de Django.
 
-| # | Tema | Decisión en Fase 1 | Acción requerida |
-|---|---|---|---|
-| 1 | Entidad `Tenant` | Se creó `core.Tenant` como referencia de `tenant_id`. | Confirmar campos adicionales (CUIT, datos fiscales, plan, etc.) |
-| 2 | Resolución del tenant activo | El middleware deja el contexto en `None`. Lo establece la autenticación en Fase 2. | Confirmar cómo se asocia un usuario a uno o varios tenants |
-| 3 | `created_by` | `UUIDField` nullable, sin FK. | Convertir en FK a `iam.CustomUser` en Fase 2 |
-| 4 | Render vs Railway | Sin definir. | Elegir plataforma |
-| 5 | Refresh token | Duración sin definir. | Definir tiempo de vida |
-| 6 | Proveedor SMTP | Sin definir. Consola en desarrollo. | Elegir proveedor |
-| 7 | Cifrado Fernet vs AES-256 | Fernet implementado. | Confirmar algoritmo |
-| 8 | Rotación de claves de cifrado | No implementada (una sola clave). | Definir procedimiento (p. ej. `MultiFernet`) |
-| 9 | Búsqueda sobre campos cifrados | No soportada en SQL. | Diseñar índices ciegos o columnas derivadas si se requieren |
-| 10 | Admin de Django | Expuesto en `/admin/` como base. | Restringir o retirar en producción una vez definidos los roles |
-| 11 | Frontend en repositorio | Fuera de alcance de Fase 1. | Definir si vive en el mismo repositorio |
+- Variables de entorno en la plataforma, nunca en el repositorio.
+- `DJANGO_DEBUG=False`, `DJANGO_ALLOWED_HOSTS` con el dominio final, `CORS_ALLOWED_ORIGINS` con el frontend.
+- Gunicorn no está en `requirements.txt`. Debe agregarse antes de desplegar: `gunicorn config.wsgi:application`.
+- Los archivos de planillas se guardan en `MEDIA_ROOT`, que no debe ser público. En Render o Railway, usar un disco persistente.
+- Ejecutar `python manage.py migrate` antes de iniciar el servicio.
 
 ---
 
 ## Verificación
 
-**Estado:** los archivos de Fase 1 fueron revisados sintácticamente, pero **no se ejecutaron pruebas ni migraciones** en el entorno de generación, porque Django y las dependencias no estaban instaladas y la instalación de paquetes no estaba disponible.
+| Qué | Resultado |
+|---|---|
+| Sintaxis de todo el backend (`py_compile`) | Pasa |
+| `render.yaml` parsea como YAML | Pasa |
+| Imports relativos del frontend resuelven a archivos existentes | Pasa |
+| Motor de liquidación (14 pruebas unitarias) | Pasó en una corrida anterior |
+| `pip install`, `manage.py check`, migraciones, pruebas con base de datos | **No ejecutado**: el entorno de generación no puede descargar paquetes (PyPI devuelve 403) |
+| `npm ci`, `typecheck`, `build` del frontend | **No ejecutado** por la misma razón |
 
-Pasos recomendados antes de dar por cerrada la Fase 1:
+Antes del primer deploy: `python manage.py check --deploy` y `python manage.py makemigrations` en local con Neon, y `npm run build`.
 
-```bash
-pip install -r requirements.txt
-python manage.py check
-python manage.py makemigrations core
-python manage.py migrate
-python -c "import django, os; os.environ['DJANGO_SETTINGS_MODULE']='config.settings'; django.setup(); from core.utils.ids import uuid7; print(uuid7())"
-```
+## Limitaciones conocidas
 
-Las pruebas automatizadas (aislamiento de tenant, soft delete, cifrado, UUIDv7) corresponden a la **Fase 4** ("Tests Base").
+- **Frontend incompleto frente al backend:** existen pantallas para login, planillas (incluido Split-Screen), liquidaciones, simulador, cobertura y soporte. **Faltan pantallas** para registro, verificación de cuenta, recuperación de contraseña, cambio de email/username, aceptación de documentos legales, vínculo familiar, evoluciones, chat operativo, firma de consentimiento y baja de agencia. Los endpoints correspondientes sí están implementados.
+- **OCR:** el motor no está definido en el documento maestro. Por defecto (`NullOCRExtractor`) no extrae datos y la carga se completa manualmente.
+- **Búsqueda sobre campos cifrados:** no es posible con SQL. Ver `docs/DECISIONES.md`.
+- **Liquidación con recargo nocturno:** el cálculo recorre minuto a minuto. Es correcto pero lento para visitas muy largas.
+
+Las decisiones que el documento maestro no define están en [`docs/DECISIONES.md`](docs/DECISIONES.md).
