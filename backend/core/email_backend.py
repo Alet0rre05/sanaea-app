@@ -1,7 +1,11 @@
 import json
+import logging
+import urllib.error
 import urllib.request
 from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
+
+logger = logging.getLogger(__name__)
 
 
 class ResendAPIBackend(BaseEmailBackend):
@@ -20,10 +24,16 @@ class ResendAPIBackend(BaseEmailBackend):
                 headers={
                     "Authorization": f"Bearer {settings.EMAIL_HOST_PASSWORD}",
                     "Content-Type": "application/json",
+                    "User-Agent": "Sanae-Backend/1.0",
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                if 200 <= resp.status < 300:
-                    sent += 1
+            try:
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    if 200 <= resp.status < 300:
+                        sent += 1
+            except urllib.error.HTTPError as exc:
+                detail = exc.read().decode("utf-8", errors="replace")
+                logger.error("Resend API error %s: %s", exc.code, detail)
+                raise
         return sent
