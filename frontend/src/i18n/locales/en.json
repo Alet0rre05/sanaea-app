@@ -1,12 +1,16 @@
 {
-  "app": { "name": "Prestaciones", "signature": "Made with care by" },
+  "app": {
+    "name": "Sanae",
+    "signature": "Made with care by"
+  },
   "nav": {
     "dashboard": "Home",
     "scans": "Timesheets",
     "settlements": "Settlements",
     "visits": "Visits",
     "chat": "Chat",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "legal": "Legal documents"
   },
   "auth": {
     "title": "Sign in",
@@ -16,14 +20,26 @@
     "invalid": "Invalid credentials.",
     "antiBot": "Anti-bot check"
   },
-  "theme": { "toDark": "Switch to dark theme", "toLight": "Switch to light theme" },
-  "view": { "simple": "Simple view", "detailed": "Detailed view" },
-  "privacy": { "blur": "Privacy mode", "hint": "Blurs names and amounts" },
+  "theme": {
+    "toDark": "Switch to dark theme",
+    "toLight": "Switch to light theme"
+  },
+  "view": {
+    "simple": "Simple view",
+    "detailed": "Detailed view"
+  },
+  "privacy": {
+    "blur": "Privacy mode",
+    "hint": "Blurs names and amounts"
+  },
   "password": {
     "minLength": "At least 15 characters",
     "noTripleRepeat": "No 3 identical characters in a row"
   },
-  "undo": { "message": "Action recorded.", "action": "Undo" },
+  "undo": {
+    "message": "Action recorded.",
+    "action": "Undo"
+  },
   "support": {
     "open": "AJR Data support",
     "title": "Support",
@@ -66,7 +82,9 @@
     "scheduled": "Scheduled",
     "empty": "No visits this month."
   },
-  "legal": { "pending": "You must accept the current legal documents." },
+  "legal": {
+    "pending": "You must accept the current legal documents."
+  },
   "common": {
     "loading": "Loading…",
     "error": "Something went wrong. Please try again.",
