@@ -1,9 +1,9 @@
 {
-  "name": "Prestaciones · AJR Data",
-  "short_name": "Prestaciones",
+  "name": "Sanae · Cuidado conectado",
+  "short_name": "Sanae",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#090D16",
-  "theme_color": "#090D16",
+  "theme_color": "#108E69",
   "icons": []
 }
