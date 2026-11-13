@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, errorMessage } from '../lib/api';
 import { passwordChecks } from '../lib/passwordRules';
 import { PasswordChecks } from '../components/ui/PasswordChecks';
+import { PasswordField } from '../components/ui/PasswordField';
 import { TurnstileWidget } from '../components/auth/TurnstileWidget';
 
 /** Pantallas de registro, verificación de cuenta y recuperación de contraseña. */
@@ -53,7 +54,7 @@ export function RegisterPage() {
         <input className="input" placeholder="Nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         <input className="input" placeholder="Apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} />
         <input className="input" type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input className="input" type="password" required autoComplete="new-password" placeholder="Contraseña"
+        <PasswordField required autoComplete="new-password" placeholder="Contraseña"
           value={password} onChange={(e) => setPassword(e.target.value)} />
         <PasswordChecks password={password} />
         <TurnstileWidget onToken={setToken} />
@@ -145,7 +146,7 @@ export function PasswordResetPage() {
         <form onSubmit={confirm} className="space-y-3">
           <input className="input kpi-number" inputMode="numeric" maxLength={6} required placeholder="Código"
             value={code} onChange={(e) => setCode(e.target.value)} />
-          <input className="input" type="password" required autoComplete="new-password" placeholder="Nueva contraseña"
+          <PasswordField required autoComplete="new-password" placeholder="Nueva contraseña"
             value={password} onChange={(e) => setPassword(e.target.value)} />
           <PasswordChecks password={password} />
           <TurnstileWidget onToken={setToken} />

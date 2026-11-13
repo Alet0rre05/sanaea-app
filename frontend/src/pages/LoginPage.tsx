@@ -5,6 +5,7 @@ import { api, errorMessage, session } from '../lib/api';
 import { useSession } from '../context/SessionContext';
 import { ThemeToggleButton } from '../theme/ThemeToggleButton';
 import { TurnstileWidget } from '../components/auth/TurnstileWidget';
+import { PasswordField } from '../components/ui/PasswordField';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -48,7 +49,7 @@ export function LoginPage() {
         </label>
         <label className="block text-sm">
           <span className="mb-1 block text-muted">{t('auth.password')}</span>
-          <input type="password" required autoComplete="current-password" className="input"
+          <PasswordField required autoComplete="current-password"
             value={password} onChange={(e) => setPassword(e.target.value)} />
         </label>
         <div aria-label={t('auth.antiBot')}>
