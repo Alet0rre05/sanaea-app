@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { RequireAuth } from './components/routing/RequireAuth';
 import { PreferencesProvider } from './context/PreferencesContext';
+import { AuroraBackground } from './components/ui/AuroraBackground';
 import { SessionProvider } from './context/SessionContext';
 import { HomePage } from './pages/HomePage';
 import { LegalAcceptancePage } from './pages/LegalAcceptancePage';
@@ -22,6 +23,7 @@ export function App() {
   return (
     <SessionProvider>
       <PreferencesProvider>
+        <AuroraBackground />
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
