@@ -9,6 +9,14 @@ import { PasswordResetPage, RegisterPage, VerifyPage } from './pages/AuthFlowPag
 import { LoginPage } from './pages/LoginPage';
 import { ScansPage } from './pages/ScansPage';
 import { SettlementsPage } from './pages/SettlementsPage';
+import { ChatsPage } from './pages/ChatsPage';
+import { DocumentsPage } from './pages/DocumentsPage';
+import { AccountPage } from './pages/AccountPage';
+import { FamilyLinksPage } from './pages/FamilyLinksPage';
+import { ConsentPage } from './pages/ConsentPage';
+import { EvolutionsPage } from './pages/EvolutionsPage';
+import { TutorialsPage } from './pages/TutorialsPage';
+import { HelpPage } from './pages/HelpPage';
 
 export function App() {
   return (
@@ -31,6 +39,14 @@ export function App() {
               <Route path="/legal" element={<LegalAcceptancePage />} />
               <Route path="/scans" element={<ScansPage />} />
               <Route path="/settlements" element={<SettlementsPage />} />
+              <Route path="/chat" element={<ChatsPage />} />
+              <Route path="/documents" element={<DocumentsPage />} />
+              <Route path="/cuenta" element={<AccountPage />} />
+              <Route path="/vinculos" element={<FamilyLinksPage />} />
+              <Route path="/consentimiento" element={<ConsentPage />} />
+              <Route path="/evoluciones" element={<EvolutionsPage />} />
+              <Route path="/tutoriales" element={<TutorialsPage />} />
+              <Route path="/ayuda" element={<HelpPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
