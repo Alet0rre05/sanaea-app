@@ -11,7 +11,7 @@ from datetime import datetime
 from django.http import FileResponse
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
@@ -20,7 +20,7 @@ from rest_framework.views import APIView
 from iam.models import TenantRole as R
 from iam.permissions import AGENCY_ADMIN, BILLING, HasTenantRole, MEDICAL_HISTORY, PATIENTS, SCANS, VISIT_SUMMARY
 from legal.permissions import LegalAcceptedRequired
-from operations import scoping, services
+from operations import scoping, services, visit_import
 from operations.models import (
     FamilyLink, Holiday, HealthInsurance, Patient, Professional, Settlement, Tariff,
     TimesheetScan, Visit, DailyEvolution,
@@ -260,3 +260,27 @@ class HolidayListView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = HolidaySerializer
     queryset = Holiday.objects.all()
+
+
+class VisitImportView(APIView):
+    """POST visits/import/ (multipart: file, commit). Vista previa con commit=false; crea con commit=true."""
+
+    permission_classes = [IsAuthenticated, HasTenantRole, LegalAcceptedRequired]
+    allowed_roles = AGENCY_ADMIN
+
+    def post(self, request):
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise ValidationError({"file": ["Adjuntá un archivo .csv o .xlsx."]})
+        commit = str(request.data.get("commit", "false")).lower() in {"1", "true", "si", "sí"}
+        try:
+            report, items = visit_import.build_report(request.membership, upload)
+        except visit_import.ImportFormatError as exc:
+            raise ValidationError({"file": [str(exc)]})
+        if not commit:
+            return Response(report)
+        if report["errors"]:
+            return Response({**report, "detail": "Corregí los errores del archivo antes de importar. No se creó ninguna visita."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        created = visit_import.create_visits(request.membership, items)
+        return Response({"created": created}, status=status.HTTP_201_CREATED)

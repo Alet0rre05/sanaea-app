@@ -14,7 +14,7 @@ router.register("evolutions", views.EvolutionViewSet, basename="evolution")
 router.register("scans", views.ScanViewSet, basename="scan")
 router.register("settlements", views.SettlementViewSet, basename="settlement")
 
-urlpatterns = router.urls + [
+urlpatterns = [path("visits/import/", views.VisitImportView.as_view())] + router.urls + [
     path("simulator/", views.SimulatorView.as_view()),
     path("coverage/", views.CoverageView.as_view()),
     path("holidays/", views.HolidayListView.as_view()),
