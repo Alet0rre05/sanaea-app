@@ -109,14 +109,14 @@ function DesktopLayout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   return (
     <div className="flex min-h-screen" data-view-mode={viewMode}>
-      <aside className={`sticky top-0 flex h-screen flex-col gap-1 border-r border-line/80 bg-surface/70 p-3 backdrop-blur-md transition-all ${collapsed ? 'w-16' : 'w-60'}`}>
+      <aside className={`sticky top-3 ml-3 mt-3 flex h-[calc(100vh-1.5rem)] flex-col gap-1 rounded-3xl border border-line/80 bg-surface/75 p-3 shadow-xl backdrop-blur-xl transition-all duration-300 ${collapsed ? 'w-16' : 'w-60'}`}>
         <button type="button" onClick={() => setCollapsed(!collapsed)} aria-label="Colapsar menú"
           className="mb-2 self-end rounded-lg p-1.5 text-muted hover:bg-canvas">
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
         {NAV.map(({ to, key, icon: Icon, end }) => (
-          <NavLink key={to} to={to} end={end}
-            className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${isActive ? 'bg-primary/15 font-semibold text-primary' : 'text-ink hover:bg-canvas'}`}>
+          <NavLink key={to} to={to} end={end} title={collapsed ? t(key) : undefined}
+            className={({ isActive }) => `nav-link flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${isActive ? 'bg-primary/15 font-semibold text-primary' : 'text-ink hover:bg-canvas'}`}>
             <Icon className="h-5 w-5 shrink-0" />
             {!collapsed && <span>{t(key)}</span>}
           </NavLink>
@@ -135,10 +135,10 @@ function MobileLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { viewMode } = usePreferences();
   return (
-    <div className="flex min-h-screen flex-col pb-20" data-view-mode={viewMode}>
+    <div className="flex min-h-screen flex-col pb-28" data-view-mode={viewMode}>
       <Topbar showSidebarToggle={false} />
       <main className="flex-1 p-4">{children}</main>
-      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line/80 bg-surface/95 backdrop-blur-md">
+      <nav aria-label="Navegación principal" className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-5 rounded-2xl border border-line/80 bg-surface/85 py-1 shadow-xl backdrop-blur-xl">
         {NAV.map(({ to, key, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end}
             className={({ isActive }) => `flex min-w-0 flex-col items-center gap-1 px-0.5 py-2.5 text-[10px] leading-tight ${isActive ? 'font-semibold text-primary' : 'text-muted'}`}>
