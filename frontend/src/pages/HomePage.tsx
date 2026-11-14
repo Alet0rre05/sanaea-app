@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, BadgeCheck, BookOpen, CheckCircle2, ClipboardList, FileCheck2, FileSignature, MessageCircle, NotebookPen, ShieldCheck, Sparkles, UserRound, WalletCards } from 'lucide-react';
+import { ArrowUpRight, BadgeCheck, BookOpen, FileSpreadsheet, IdCard, CheckCircle2, ClipboardList, FileCheck2, FileSignature, MessageCircle, NotebookPen, ShieldCheck, Sparkles, UserRound, WalletCards } from 'lucide-react';
 import { api } from '../lib/api';
 import { usePreferences } from '../context/PreferencesContext';
 import { useSession } from '../context/SessionContext';
@@ -33,6 +33,8 @@ export function HomePage() {
 
   const role = activeMembership?.role ?? '';
   const roleShortcuts = [
+    { to: '/fichas', title: 'Fichas e IDs', short: 'Pacientes y prestadores', long: 'Pacientes y prestadores con su ID, para usar en la importación de visitas.', icon: IdCard, tone: 'violet', show: role === 'TENANT_OWNER' || role === 'TENANT_ADMIN' || role === 'TENANT_LIQUIDATOR' },
+    { to: '/importar', title: 'Importar visitas', short: 'CSV o Excel', long: 'Cargá visitas desde un CSV o Excel, con vista previa y control de errores antes de guardar.', icon: FileSpreadsheet, tone: 'mint', show: role === 'TENANT_OWNER' || role === 'TENANT_ADMIN' },
     { to: '/tutoriales', title: 'Tutoriales', short: 'Recorridos de 3 a 5 pasos', long: 'Tutoriales para tu rol, con el enlace a cada sección. Incluye preguntas frecuentes.', icon: BookOpen, tone: 'amber', show: true },
     { to: '/cuenta', title: 'Mi cuenta', short: 'Datos y seguridad', long: 'Cambiá tu email, respaldo o usuario con verificación por código.', icon: UserRound, tone: 'neutral', show: true },
     { to: '/vinculos', title: 'Vínculo familiar', short: 'Verificar vínculo', long: 'Verificá tu vínculo con el paciente para acceder a sus visitas.', icon: BadgeCheck, tone: 'blue', show: role === 'TENANT_FAMILY_CLIENT' },
