@@ -26,7 +26,7 @@ export function SupportWidget() {
   };
 
   return (
-    <div className="fixed bottom-24 right-3 z-40 md:bottom-6 md:right-6">
+    <div className="fixed bottom-28 right-3 z-40 md:bottom-6 md:right-6">
       {open && (
         <div role="dialog" aria-label={t('support.title')} className="card mb-3 w-72 space-y-3 shadow-xl">
           <div className="flex items-center justify-between">
