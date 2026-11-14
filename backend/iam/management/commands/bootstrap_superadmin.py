@@ -10,9 +10,11 @@ Variables:
 - SANAE_ADMIN_EMAIL (obligatoria): email del superadmin.
 - SANAE_ADMIN_PASSWORD (opcional): se asigna solo si el usuario no existe o si
   se pasa --reset-password. Sin esta variable no se toca la contraseña.
-- SANAE_ADMIN_TENANT (opcional): slug de una agencia. Si se indica, también se
-  crea la membresía de propietario en esa agencia (necesaria para ver Planillas
-  y las fichas dentro de una agencia).
+- SANAE_ADMIN_TENANT (opcional): slug de una agencia. Si la agencia no existe, se
+  crea. Si se indica, también se crea la membresía de propietario en esa agencia
+  (necesaria para ver Planillas y las fichas dentro de una agencia).
+- SANAE_ADMIN_TENANT_NAME (opcional): nombre visible de la agencia si se crea.
+  Por defecto usa el slug.
 
 El comando no envía OTP: deja la cuenta activa directamente. Por eso conviene
 ejecutarlo a mano y quitar la contraseña de las variables de entorno después.
@@ -48,7 +50,9 @@ class Command(BaseCommand):
         if tenant_slug:
             tenant = Tenant.objects.filter(slug=tenant_slug).first()
             if tenant is None:
-                raise CommandError(f"No existe una agencia con slug '{tenant_slug}'.")
+                # Si la agencia no existe, se crea con el nombre indicado (o el slug).
+                tenant_name = (os.environ.get("SANAE_ADMIN_TENANT_NAME") or tenant_slug).strip()
+                tenant = Tenant.objects.create(name=tenant_name, slug=tenant_slug)
 
         with transaction.atomic():
             user = CustomUser.objects.filter(email=email).first()
