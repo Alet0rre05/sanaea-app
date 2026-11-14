@@ -16,6 +16,8 @@ import { AccountPage } from './pages/AccountPage';
 import { FamilyLinksPage } from './pages/FamilyLinksPage';
 import { ConsentPage } from './pages/ConsentPage';
 import { EvolutionsPage } from './pages/EvolutionsPage';
+import { ImportPage } from './pages/ImportPage';
+import { CatalogPage } from './pages/CatalogPage';
 import { TutorialsPage } from './pages/TutorialsPage';
 import { HelpPage } from './pages/HelpPage';
 
@@ -49,6 +51,8 @@ export function App() {
               <Route path="/evoluciones" element={<EvolutionsPage />} />
               <Route path="/tutoriales" element={<TutorialsPage />} />
               <Route path="/ayuda" element={<HelpPage />} />
+              <Route path="/importar" element={<ImportPage />} />
+              <Route path="/fichas" element={<CatalogPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
